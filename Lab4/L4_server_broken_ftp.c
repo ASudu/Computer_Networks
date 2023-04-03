@@ -18,7 +18,12 @@ void error(char* msg)
 
 int main()
 {
-    
+    int listenfd = 0;
+    int connfd = 0;
+    struct sockaddr_in server_addr;
+    char sendbuff[1025];
+
+    listenfd = socket(AF_INET, SOCK_STREAM, 0);
     
     return 0;
 }
