@@ -13,7 +13,7 @@ int c_sock, key;
 struct sockaddr_in client;
 int clen = sizeof(client);
 char* server_ip = "172.18.76.160";
-char key_buff[2*BUFFLEN], val_buff[BUFFLEN], ch;
+char key_buff[2*BUFFLEN], val_buff[BUFFLEN], ch, dummy;
 
 void error(char* msg)
 /* This function is called to print error and close program*/
@@ -65,6 +65,7 @@ provided the key_buff doesn't already exists*/
     printf("Enter the key to add: \n");
     scanf("%d", &key);
     printf("Enter the corresponding value to add: \n");
+    dummy = getchar();
     gets(val_buff);
 
     sprintf(key_buff, "%d", key);
@@ -78,6 +79,8 @@ provided the key_buff doesn't already exists*/
     // Send the key
     if(send(c_sock, key_buff, sizeof(key_buff), 0) < 0)
         error("[-] Error in sending data (put)!\n");
+    else
+        printf("[+] Put request sent!\n");
     
     // Receive the corresponding value
     memset(val_buff, '\0', sizeof(val_buff));
@@ -144,7 +147,7 @@ void quit()
         if(recv(c_sock, val_buff, sizeof(val_buff), 0) < 0)
             error("[-] Error in receiving response (quit)!\n");
         else
-            puts(key_buff);
+            puts(val_buff);
 
         printf("[+] Connection successfully closed (quit)!\n");
         close(c_sock);
@@ -176,7 +179,8 @@ int main()
     while(1)
     {
         printf("Enter one of the following options:\n");
-        printf("p - put key_buff val_buff\n g - get key_buff\n d - del key_buff\n q - Quit");
+        printf(" p - put key_buff val_buff\n g - get key_buff\n d - del key_buff\n q - Quit\n");
+        printf("Your choice: ");
         scanf("%c", &ch);
         ch = tolower(ch);
 
@@ -200,6 +204,6 @@ int main()
 
         }
     }
-
+    close(c_sock);
     return 0;
 }
