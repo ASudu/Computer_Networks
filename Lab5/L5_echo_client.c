@@ -45,12 +45,15 @@ int main()
     while(1)
     {
         memset(s_buff, '\0', sizeof(s_buff));
-        printf("Enter message: ");
+        printf("Enter message (\"bye\" or \"exit\" to end): ");
         gets(s_buff);
 
         // Send data
         if(send(c_sock, s_buff, sizeof(s_buff), 0) < 0)
             error("[-] Error in sending message!\n");
+        else
+            if(!strcmp(s_buff, "bye") || !strcmp(s_buff, "exit"))
+                break;
         
         // Receive data
         memset(r_buff, '\0', sizeof(r_buff));

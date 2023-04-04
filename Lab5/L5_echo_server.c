@@ -18,9 +18,9 @@ void error(char* msg)
 int main()
 {
     int s_sock, c_sock, childpid, rcvlen;
-    int clen = sizeof(c_sock);
     char buff[BUFFLEN];
     struct sockaddr_in server, client;
+    int clen = sizeof(client);
 
     /* CREATE socket*/
     if((s_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
@@ -62,9 +62,12 @@ int main()
                 // Receive data
                 memset(buff, '\0', BUFFLEN);
                 rcvlen = recv(c_sock, buff, BUFFLEN, 0);
-                if(!strcmp(buff, "exit"))
+                if(!strcmp(buff, "exit") || !strcmp(buff, "bye"))
                 {
-                    printf("[+] Disconnected from %s: %d\n", inet_ntoa(client.sin_addr), ntohs(client.sin_port));
+                    int portno = ntohs(client.sin_port);
+                    char* addr = inet_ntoa(client.sin_addr);
+                    printf("[+] Disconnected from %s: %d!\n", addr, portno);
+                    close(c_sock);
                     break;
                 }
 
