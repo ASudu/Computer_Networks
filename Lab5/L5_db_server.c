@@ -241,62 +241,65 @@ int main()
             printf("[+] Connection established with %s: %d\n", inet_ntoa(client.sin_addr), ntohs(client.sin_port));
         
         if((childpid = fork()) == 0)
+        {
             close(s_sock);
         
-        while(1)
-        {
-            /* RECEIEVE data*/
-            memset(r_buff, '\0', sizeof(r_buff));
-            if(recv(c_sock, r_buff, sizeof(r_buff), 0) < 0)
-                error("[-] Error in receiving data!\n");
-            else
+            while(1)
             {
-                printf("[+] Received message from %s: %d\n", inet_ntoa(client.sin_addr), ntohs(client.sin_port));
-                command = r_buff[strlen(r_buff) - 1];
-
-                // Serve request based on the received message
-                // Case 1: Close request
-                if(!strcmp(r_buff, "Bye"))
-                {
-                    memset(s_buff, '\0', sizeof(s_buff));
-                    strcpy(s_buff, "Goodbye");
-
-                    if(send(c_sock, s_buff, sizeof(s_buff), 0) < 0)
-                        error("[-] Error in sending data (quit)!\n");
-                    else
-                    {
-                        printf("[+] Disconnected from %s: %d\n", inet_ntoa(client.sin_addr), ntohs(client.sin_port));
-                        close(c_sock);
-                        break;
-                    }
-                }
-
+                /* RECEIEVE data*/
+                memset(r_buff, '\0', sizeof(r_buff));
+                if(recv(c_sock, r_buff, sizeof(r_buff), 0) < 0)
+                    error("[-] Error in receiving data!\n");
                 else
                 {
-                    switch(command)
+                    printf("[+] Received message from %s: %d\n", inet_ntoa(client.sin_addr), ntohs(client.sin_port));
+                    command = r_buff[strlen(r_buff) - 1];
+
+                    // Serve request based on the received message
+                    // Case 1: Close request
+                    if(!strcmp(r_buff, "Bye"))
                     {
-                        // Case 2: Put request
-                        case 'p':
-                            serve_put();
+                        memset(s_buff, '\0', sizeof(s_buff));
+                        strcpy(s_buff, "Goodbye");
+
+                        if(send(c_sock, s_buff, sizeof(s_buff), 0) < 0)
+                            error("[-] Error in sending data (quit)!\n");
+                        else
+                        {
+                            printf("[+] Disconnected from %s: %d\n", inet_ntoa(client.sin_addr), ntohs(client.sin_port));
+                            close(c_sock);
                             break;
-                        // Case 3: Get request
-                        case 'g':
-                            serve_get();
-                            break;
-                        // Case 4: Delete request
-                        case 'd':
-                            serve_del();
-                            break;
+                        }
                     }
+
+                    else
+                    {
+                        switch(command)
+                        {
+                            // Case 2: Put request
+                            case 'p':
+                                serve_put();
+                                break;
+                            // Case 3: Get request
+                            case 'g':
+                                serve_get();
+                                break;
+                            // Case 4: Delete request
+                            case 'd':
+                                serve_del();
+                                break;
+                        }
+                    }
+
+
                 }
 
-
             }
-
         }
     }
 
     // Close connection
+    close(s_sock);
     close(c_sock);
     return 0;
 }
