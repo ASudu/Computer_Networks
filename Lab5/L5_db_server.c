@@ -7,6 +7,296 @@
 
 #define PORT 8888
 #define BUFFLEN 256
+#define MAXPENDING 5
 
-int s_sock, c_sock;
+int s_sock, c_sock, childpid;
 struct sockaddr_in server, client;
+int clen = sizeof(client);
+char s_buff[BUFFLEN], r_buff[2*BUFFLEN], command;
+FILE* f;
+
+void error(char* msg)
+{
+    perror(msg);
+    exit(1);
+}
+
+void delete_line(int line)
+{
+    f = fopen("database.txt", "r+");
+    FILE* fp = fopen("temp.txt", "r+");
+    char buffer[BUFFLEN];
+    int lineno=1;
+
+    if(!f || !fp)
+        error("[-] Error opening file");
+    // Write all lines except "line" into temp file
+    while(fgets(buffer, sizeof(buffer), f) != NULL)
+    {
+        if(lineno == line)
+            continue;
+        else
+        {
+            fprintf(fp, "%s", buffer);
+        }
+
+        lineno++;
+    }
+
+    fclose(f);
+    fclose(fp);
+
+    // Rename temp file
+    remove("database.txt");
+    rename("temp.txt", "database.txt");
+}
+
+void serve_put()
+{
+    char* to_write;
+    // Have a copy to write into the file
+    strcpy(to_write, r_buff);
+    // Extract key to check if it already exists in the database
+    char* key = strtok(r_buff, " ");
+    char line[BUFFLEN];
+    int found = -1;
+
+    // Open file in both read and write mode
+    FILE* f = fopen("database.txt", "r+");
+
+    // File open error
+    if(!f)
+        error("[-] Error in opening file!\n");
+    else
+    {
+        // Read line by line to check if key exists
+        while(fgets(line, strlen(line), f) != NULL)
+        {
+            char* reference_key = strtok(line, " ");
+
+            if(!strcmp(reference_key, key))
+            {
+                found = 1;
+
+                // Send that there was an error
+                memset(s_buff, '\0', sizeof(s_buff));
+                strcpy(s_buff, "Key already exists!");
+                if(send(c_sock, s_buff, sizeof(s_buff), 0) < 0)
+                    error("[-] Error sending data!\n");
+                else
+                {
+                    fclose(f);
+                    break;
+                }
+            }
+        }
+
+        // If key doesn't exist
+        if(found == -1)
+        {
+            fclose(f);
+            f = fopen("database.txt", "a");
+            fprintf(f,"\n%s",to_write);
+            fclose(f);
+
+            // Send that entry was successfully added
+            memset(s_buff, '\0', sizeof(s_buff));
+            strcpy(s_buff, "OK");
+            if(send(c_sock, s_buff, sizeof(s_buff), 0) < 0)
+                error("[-] Error sending data!\n");
+        }
+    }
+}
+
+void serve_get()
+{
+    // Extract key to check if it already exists in the database
+    char* key = strtok(r_buff, " ");
+    char line[BUFFLEN];
+    int found = -1;
+
+    // Open file in both read and write mode
+    FILE* f = fopen("database.txt", "r+");
+
+    // File open error
+    if(!f)
+        error("[-] Error in opening file!\n");
+    else
+    {
+        // Read line by line to check if key exists
+        while(fgets(line, strlen(line), f))
+        {
+            char* reference_key = strtok(line, " ");
+            char* val = strtok(NULL, " ");
+
+            if(!strcmp(reference_key, key))
+            {
+                found = 1;
+
+                // Send the value
+                memset(s_buff, '\0', sizeof(s_buff));
+                strcpy(s_buff, val);
+                if(send(c_sock, s_buff, sizeof(s_buff), 0) < 0)
+                    error("[-] Error sending data!\n");
+                else
+                {
+                    fclose(f);
+                    break;
+                }
+            }
+        }
+
+        // If key doesn't exist
+        if(found == -1)
+        {
+            // Send that entry was not found
+            memset(s_buff, '\0', sizeof(s_buff));
+            strcpy(s_buff, "Key doesn't exist!");
+            if(send(c_sock, s_buff, sizeof(s_buff), 0) < 0)
+                error("[-] Error sending data!\n");
+        }
+    }
+}
+
+void serve_del()
+{
+    // Extract key to check if it already exists in the database
+    char* key = strtok(r_buff, " ");
+    char line[BUFFLEN];
+    int lineno = 1, found = -1;
+
+    // Open file in both read and write mode
+    FILE* f = fopen("database.txt", "r+");
+
+    // File open error
+    if(!f)
+        error("[-] Error in opening file!\n");
+    else
+    {
+        // Read line by line to check if key exists
+        while(fgets(line, strlen(line), f))
+        {
+            char* reference_key = strtok(line, " ");
+            char* val = strtok(NULL, " ");
+
+            if(!strcmp(reference_key, key))
+            {
+                found = 1;
+                fclose(f);
+
+                // Send the value
+                delete_line(lineno);
+                memset(s_buff, '\0', sizeof(s_buff));
+                strcpy(s_buff, "OK");
+                if(send(c_sock, s_buff, sizeof(s_buff), 0) < 0)
+                    error("[-] Error sending data!\n");
+                else
+                    break;
+            }
+
+            lineno++;
+        }
+
+        // If key doesn't exist
+        if(found == -1)
+        {
+            // Send that entry was not found
+            memset(s_buff, '\0', sizeof(s_buff));
+            strcpy(s_buff, "Key doesn't exist!");
+            if(send(c_sock, s_buff, sizeof(s_buff), 0) < 0)
+                error("[-] Error sending data!\n");
+        }
+    }
+}
+
+int main()
+{    
+    /* CREATE TCP socket*/
+    if((s_sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)) < 0)
+        error("[-] Error in creating server socket!\n");
+    else
+        printf("[+] Server socket created!\n");
+    
+    /* BIND the socket*/
+    memset(&server, 0, sizeof(server));
+    server.sin_family = AF_INET;
+    server.sin_port = htons(PORT);
+    server.sin_addr.s_addr = htonl(INADDR_ANY);
+
+    if(bind(s_sock, (struct sockaddr*) &server, sizeof(server))< 0)
+        error("[-] Error in binding socket!\n");
+
+    /* LISTEN*/
+    if(listen(s_sock, MAXPENDING) < 0)
+        error("[-] Error in listening!\n");
+    else
+        printf("[+] Socket listening!\n");
+    
+    /* HANDLE clients*/
+    while(1)
+    {
+        if((c_sock = accept(s_sock, (struct sockaddr*) &client, &clen)) < 0)
+            error("[-] Error in accepting connection request!\n");
+        else
+            printf("[+] Connection established with %s: %d\n", inet_ntoa(client.sin_addr), ntohs(client.sin_port));
+        
+        if((childpid = fork()) == 0)
+            close(s_sock);
+        
+        while(1)
+        {
+            /* RECEIEVE data*/
+            memset(r_buff, '\0', sizeof(r_buff));
+            if(recv(c_sock, r_buff, sizeof(r_buff), 0) < 0)
+                error("[-] Error in receiving data!\n");
+            else
+            {
+                printf("[+] Received message from %s: %d\n", inet_ntoa(client.sin_addr), ntohs(client.sin_port));
+                command = r_buff[strlen(r_buff) - 1];
+
+                // Serve request based on the received message
+                // Case 1: Close request
+                if(!strcmp(r_buff, "Bye"))
+                {
+                    memset(s_buff, '\0', sizeof(s_buff));
+                    strcpy(s_buff, "Goodbye");
+
+                    if(send(c_sock, s_buff, sizeof(s_buff), 0) < 0)
+                        error("[-] Error in sending data (quit)!\n");
+                    else
+                    {
+                        printf("[+] Disconnected from %s: %d\n", inet_ntoa(client.sin_addr), ntohs(client.sin_port));
+                        close(c_sock);
+                        break;
+                    }
+                }
+
+                else
+                {
+                    switch(command)
+                    {
+                        // Case 2: Put request
+                        case 'p':
+                            serve_put();
+                            break;
+                        // Case 3: Get request
+                        case 'g':
+                            serve_get();
+                            break;
+                        // Case 4: Delete request
+                        case 'd':
+                            serve_del();
+                            break;
+                    }
+                }
+
+
+            }
+
+        }
+    }
+
+    // Close connection
+    close(c_sock);
+    return 0;
+}

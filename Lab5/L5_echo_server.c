@@ -81,9 +81,10 @@ int main()
             }
         }
 
-        // CLOSE
-        close(c_sock);
 
     }
+
+    // CLOSE
+    close(c_sock);
     return 0;
 }

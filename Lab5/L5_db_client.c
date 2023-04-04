@@ -25,7 +25,7 @@ void error(char* msg)
 void get()
 /* This function gets the val_buff corresponding to the key_buff passed*/
 {
-    memset(key_buff, '\0', BUFFLEN);
+    memset(key_buff, '\0', sizeof(key_buff));
     printf("Enter the key to find: \n");
     scanf("%d", &key);
 
@@ -34,12 +34,12 @@ void get()
     strcat(key_buff, " g");
 
     // Send the key
-    if(send(c_sock, key_buff, BUFFLEN, 0) < 0)
+    if(send(c_sock, key_buff, sizeof(key_buff), 0) < 0)
         error("[-] Error in sending data (get)!\n");
     
     // Receive the corresponding value
-    memset(val_buff, '\0', BUFFLEN);
-    if(recv(c_sock, val_buff, BUFFLEN, 0) < 0)
+    memset(val_buff, '\0', sizeof(val_buff));
+    if(recv(c_sock, val_buff, sizeof(val_buff), 0) < 0)
         error("[-] Error in receiving response (get)!\n");
     else
     {
@@ -60,8 +60,8 @@ void put()
 /* This function adds a key_buff-val_buff pair in existing database
 provided the key_buff doesn't already exists*/
 {
-    memset(key_buff, '\0', BUFFLEN);
-    memset(val_buff, '\0', BUFFLEN);
+    memset(key_buff, '\0', sizeof(key_buff));
+    memset(val_buff, '\0', sizeof(val_buff));
     printf("Enter the key to add: \n");
     scanf("%d", &key);
     printf("Enter the corresponding value to add: \n");
@@ -76,12 +76,12 @@ provided the key_buff doesn't already exists*/
     strcat(key_buff, " p");
 
     // Send the key
-    if(send(c_sock, key_buff, BUFFLEN, 0) < 0)
+    if(send(c_sock, key_buff, sizeof(key_buff), 0) < 0)
         error("[-] Error in sending data (put)!\n");
     
     // Receive the corresponding value
-    memset(val_buff, '\0', BUFFLEN);
-    if(recv(c_sock, val_buff, BUFFLEN, 0) < 0)
+    memset(val_buff, '\0', sizeof(val_buff));
+    if(recv(c_sock, val_buff, sizeof(val_buff), 0) < 0)
         error("[-] Error in receiving response (put)!\n");
     else
     {
@@ -99,7 +99,7 @@ void delete()
 /* This function deletes the key_buff-val_buff pair corresponding
 to the key_buff if it exists*/
 {
-    memset(key_buff, '\0', BUFFLEN);
+    memset(key_buff, '\0', sizeof(key_buff));
     printf("Enter the key to delete: \n");
     scanf("%d", &key);
 
@@ -108,12 +108,12 @@ to the key_buff if it exists*/
     strcat(key_buff, " d");
 
     // Send the key
-    if(send(c_sock, key_buff, BUFFLEN, 0) < 0)
+    if(send(c_sock, key_buff, sizeof(key_buff), 0) < 0)
         error("[-] Error in sending data (del)!\n");
     
     // Receive the corresponding value
-    memset(val_buff, '\0', BUFFLEN);
-    if(recv(c_sock, val_buff, BUFFLEN, 0) < 0)
+    memset(val_buff, '\0', sizeof(val_buff));
+    if(recv(c_sock, val_buff, sizeof(val_buff), 0) < 0)
         error("[-] Error in receiving response (del)!\n");
     else
     {
@@ -131,17 +131,17 @@ void quit()
 /* This function exits the program and terminates the connection*/
 {
     // Flush Buffer
-    memset(key_buff, '\0', BUFFLEN);
+    memset(key_buff, '\0', sizeof(key_buff));
     // Send Bye
     strcpy(key_buff, "Bye");
-    if(send(c_sock, key_buff, BUFFLEN, 0) < 0)
+    if(send(c_sock, key_buff, sizeof(key_buff), 0) < 0)
         error("[-] Error in sending close request (quit)!\n");
     else
     {
         // Flush Buffer
-        memset(key_buff, '\0', BUFFLEN);
+        memset(val_buff, '\0', sizeof(val_buff));
         // Wait to receive response
-        if(recv(c_sock, key_buff, BUFFLEN, 0) < 0)
+        if(recv(c_sock, val_buff, sizeof(val_buff), 0) < 0)
             error("[-] Error in receiving response (quit)!\n");
         else
             puts(key_buff);
@@ -200,6 +200,6 @@ int main()
 
         }
     }
-    
+
     return 0;
 }
