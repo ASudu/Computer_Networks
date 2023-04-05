@@ -24,19 +24,19 @@ void error(char* msg)
 
 void delete_line(int line)
 {
-    f = fopen("database.txt", "r+");
-    FILE* fp = fopen("temp.txt", "r+");
+    f = fopen("database.txt", "rw");
+    FILE* fp = fopen("temp.txt", "w");
     char buffer[BUFFLEN];
     int lineno=1;
 
-    if(!f || !fp)
-        error("[-] Error opening file");
+    if(!f)
+        error("[-] Error opening database file");
+    else if(!fp)
+        error("[-] Error opening temp file");
     // Write all lines except "line" into temp file
     while(fgets(buffer, sizeof(buffer), f) != NULL)
     {
-        if(lineno == line)
-            continue;
-        else
+        if(lineno != line)
         {
             fprintf(fp, "%s", buffer);
         }
@@ -68,7 +68,7 @@ void serve_put(char* r_buff)
     // printf("Tokenized\n");
     char line[2*BUFFLEN];
     int found = -1;
-
+    char reference_key[BUFFLEN], reference_val[BUFFLEN];
     // Open file in both read and write mode
     f = fopen("database.txt", "r+");
     int iter = 1;
@@ -82,7 +82,7 @@ void serve_put(char* r_buff)
         // Read line by line to check if key exists
         while(fgets(line, strlen(line), f) != NULL)
         {
-            char* reference_key = strtok(line, " ");
+            // char* reference_key = strtok(line, " ");
 
             if(!strcmp(reference_key, key))
             {
@@ -130,11 +130,12 @@ void serve_get(char* r_buff)
     char line[2*BUFFLEN];
     int found = -1;
     int iter=1;
+    char ref_key[BUFFLEN], ref_val[BUFFLEN];
 
     // Open file in both read and write mode
     f = fopen("database.txt", "r+");
-    fseek(f,0,SEEK_SET);
-    printf("[+] Set pointer to start!\n");
+    // fseek(f,0,SEEK_SET);
+    // printf("[+] Set pointer to start!\n");
 
     // File open error
     if(!f)
@@ -143,20 +144,20 @@ void serve_get(char* r_buff)
     {
         printf("[+] File opened\n");
         // Read line by line to check if key exists
-        while(fgets(line, strlen(line), f) != NULL)
+        while(fscanf(f,"%s %s\n",ref_key, ref_val) != 0)
         {
-            printf("Iteration #%d:\n",iter);
-            char* reference_key = strtok(line, " ");
-            printf("%s\n", reference_key);
-            char* val = strtok(NULL, " ");
+            // char* reference_key = strtok(line, " ");
+            // printf("%s\n", reference_key);
+            // char* val = strtok(NULL, " ");
 
-            if(!strcmp(reference_key, key))
+
+            if(!strcmp(ref_key, key))
             {
                 found = 1;
 
                 // Send the value
                 memset(s_buff, '\0', sizeof(s_buff));
-                strcpy(s_buff, val);
+                strcpy(s_buff, ref_val);
                 if(send(c_sock, s_buff, sizeof(s_buff), 0) < 0)
                     error("[-] Error sending data!\n");
                 else
@@ -169,7 +170,8 @@ void serve_get(char* r_buff)
             iter++;
         }
 
-        printf("[-] Did not enter while!\n");
+        if(iter == 1)
+            printf("[-] Did not enter while!\n");
         // If key doesn't exist
         if(found == -1)
         {
@@ -187,54 +189,53 @@ void serve_get(char* r_buff)
 
 void serve_del(char* r_buff)
 {
-    // // Extract key to check if it already exists in the database
-    // char* key = strtok(r_buff, " ");
-    // char line[BUFFLEN];
-    // int lineno = 1, found = -1;
+    // Extract key to check if it already exists in the database
+    char* key = strtok(r_buff, " ");
+    char line[BUFFLEN];
+    int lineno = 1, found = -1;
+    char reference_key[BUFFLEN], reference_val[BUFFLEN];
 
-    // // Open file in both read and write mode
-    // FILE* f = fopen("database.txt", "r+");
+    // Open file in both read and write mode
+    FILE* f = fopen("database.txt", "r+");
 
-    // // File open error
-    // if(!f)
-    //     error("[-] Error in opening file!\n");
-    // else
-    // {
-    //     // Read line by line to check if key exists
-    //     while(fgets(line, strlen(line), f))
-    //     {
-    //         char* reference_key = strtok(line, " ");
-    //         char* val = strtok(NULL, " ");
+    // File open error
+    if(!f)
+        error("[-] Error in opening file!\n");
+    else
+    {
+        // Read line by line to check if key exists
+        while(fscanf(f,"%s %s\n", reference_key, reference_val) != 0)
+        {
+            printf("Line num: %d\n", lineno);
+            if(!strcmp(reference_key, key))
+            {
+                found = 1;
+                fclose(f);
 
-    //         if(!strcmp(reference_key, key))
-    //         {
-    //             found = 1;
-    //             fclose(f);
+                // Send the value
+                delete_line(lineno);
+                memset(s_buff, '\0', sizeof(s_buff));
+                strcpy(s_buff, "OK");
+                if(send(c_sock, s_buff, sizeof(s_buff), 0) < 0)
+                    error("[-] Error sending data!\n");
+                else
+                    break;
+            }
 
-    //             // Send the value
-    //             delete_line(lineno);
-    //             memset(s_buff, '\0', sizeof(s_buff));
-    //             strcpy(s_buff, "OK");
-    //             if(send(c_sock, s_buff, sizeof(s_buff), 0) < 0)
-    //                 error("[-] Error sending data!\n");
-    //             else
-    //                 break;
-    //         }
+            lineno++;
+        }
 
-    //         lineno++;
-    //     }
-
-    //     // If key doesn't exist
-    //     if(found == -1)
-    //     {
-    //         // Send that entry was not found
-    //         memset(s_buff, '\0', sizeof(s_buff));
-    //         strcpy(s_buff, "Key doesn't exist!");
-    //         if(send(c_sock, s_buff, sizeof(s_buff), 0) < 0)
-    //             error("[-] Error sending data!\n");
-    //     }
-    // }
-    printf("In serve_del()");
+        // If key doesn't exist
+        if(found == -1)
+        {
+            // Send that entry was not found
+            memset(s_buff, '\0', sizeof(s_buff));
+            strcpy(s_buff, "Key doesn't exist!");
+            if(send(c_sock, s_buff, sizeof(s_buff), 0) < 0)
+                error("[-] Error sending data!\n");
+        }
+    }
+    // printf("In serve_del()");
 }
 
 int main()
