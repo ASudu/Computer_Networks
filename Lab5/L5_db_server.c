@@ -133,6 +133,8 @@ void serve_get(char* r_buff)
 
     // Open file in both read and write mode
     f = fopen("database.txt", "r+");
+    fseek(f,0,SEEK_SET);
+    printf("[+] Set pointer to start!\n");
 
     // File open error
     if(!f)
@@ -167,6 +169,7 @@ void serve_get(char* r_buff)
             iter++;
         }
 
+        printf("[-] Did not enter while!\n");
         // If key doesn't exist
         if(found == -1)
         {
