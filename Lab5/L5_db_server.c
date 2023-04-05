@@ -52,21 +52,26 @@ void delete_line(int line)
     rename("temp.txt", "database.txt");
 }
 
-void serve_put()
+void serve_put(char* r_buff)
 {
-    char* to_write;
-    printf("Before copy\n");
+    char to_write[BUFFLEN];
+    // printf("Before copy\n");
     // Have a copy to write into the file
     strcpy(to_write, r_buff);
-    printf("Copied\n");
+    // printf("Copied\n");
+
+    // To remove " p"
+    to_write[strlen(to_write) - 1] = '\0';
+    to_write[strlen(to_write) - 1] = '\0';
     // Extract key to check if it already exists in the database
     char* key = strtok(r_buff, " ");
-    printf("Tokenized\n");
-    char line[BUFFLEN];
+    // printf("Tokenized\n");
+    char line[2*BUFFLEN];
     int found = -1;
 
     // Open file in both read and write mode
-    FILE* f = fopen("database.txt", "r+");
+    f = fopen("database.txt", "r+");
+    int iter = 1;
 
     // File open error
     if(!f)
@@ -95,6 +100,8 @@ void serve_put()
                     break;
                 }
             }
+
+            iter++;
         }
 
         // If key doesn't exist
@@ -103,6 +110,7 @@ void serve_put()
             fclose(f);
             f = fopen("database.txt", "a");
             fprintf(f,"\n%s",to_write);
+            printf("[+] Updated file!\n");
             fclose(f);
 
             // Send that entry was successfully added
@@ -115,58 +123,66 @@ void serve_put()
     // printf("In serve_put()");
 }
 
-void serve_get()
+void serve_get(char* r_buff)
 {
-    // // Extract key to check if it already exists in the database
-    // char* key = strtok(r_buff, " ");
-    // char line[BUFFLEN];
-    // int found = -1;
+    // Extract key to check if it already exists in the database
+    char* key = strtok(r_buff, " ");
+    char line[2*BUFFLEN];
+    int found = -1;
+    int iter=1;
 
-    // // Open file in both read and write mode
-    // FILE* f = fopen("database.txt", "r+");
+    // Open file in both read and write mode
+    f = fopen("database.txt", "r+");
 
-    // // File open error
-    // if(!f)
-    //     error("[-] Error in opening file!\n");
-    // else
-    // {
-    //     // Read line by line to check if key exists
-    //     while(fgets(line, strlen(line), f))
-    //     {
-    //         char* reference_key = strtok(line, " ");
-    //         char* val = strtok(NULL, " ");
+    // File open error
+    if(!f)
+        error("[-] Error in opening file!\n");
+    else
+    {
+        printf("[+] File opened\n");
+        // Read line by line to check if key exists
+        while(fgets(line, strlen(line), f) != NULL)
+        {
+            printf("Iteration #%d:\n",iter);
+            char* reference_key = strtok(line, " ");
+            printf("%s\n", reference_key);
+            char* val = strtok(NULL, " ");
 
-    //         if(!strcmp(reference_key, key))
-    //         {
-    //             found = 1;
+            if(!strcmp(reference_key, key))
+            {
+                found = 1;
 
-    //             // Send the value
-    //             memset(s_buff, '\0', sizeof(s_buff));
-    //             strcpy(s_buff, val);
-    //             if(send(c_sock, s_buff, sizeof(s_buff), 0) < 0)
-    //                 error("[-] Error sending data!\n");
-    //             else
-    //             {
-    //                 fclose(f);
-    //                 break;
-    //             }
-    //         }
-    //     }
+                // Send the value
+                memset(s_buff, '\0', sizeof(s_buff));
+                strcpy(s_buff, val);
+                if(send(c_sock, s_buff, sizeof(s_buff), 0) < 0)
+                    error("[-] Error sending data!\n");
+                else
+                {
+                    fclose(f);
+                    break;
+                }
+            }
 
-    //     // If key doesn't exist
-    //     if(found == -1)
-    //     {
-    //         // Send that entry was not found
-    //         memset(s_buff, '\0', sizeof(s_buff));
-    //         strcpy(s_buff, "Key doesn't exist!");
-    //         if(send(c_sock, s_buff, sizeof(s_buff), 0) < 0)
-    //             error("[-] Error sending data!\n");
-    //     }
-    // }
-    printf("In serve_get()");
+            iter++;
+        }
+
+        // If key doesn't exist
+        if(found == -1)
+        {
+            // Send that entry was not found
+            memset(s_buff, '\0', sizeof(s_buff));
+            strcpy(s_buff, "Key doesn't exist!");
+            if(send(c_sock, s_buff, sizeof(s_buff), 0) < 0)
+                error("[-] Error sending data!\n");
+            else
+                fclose(f);
+        }
+    }
+    // printf("In serve_get()");
 }
 
-void serve_del()
+void serve_del(char* r_buff)
 {
     // // Extract key to check if it already exists in the database
     // char* key = strtok(r_buff, " ");
@@ -290,20 +306,20 @@ int main()
                         {
                             // Case 2: Put request
                             case 'p':
-                                printf("put\n");
-                                serve_put();
-                                printf("put\n");
+                                // printf("put\n");
+                                serve_put(r_buff);
+                                // printf("put\n");
                                 break;
                             // Case 3: Get request
                             case 'g':
                                 printf("get\n");
-                                serve_get();
+                                serve_get(r_buff);
                                 printf("put\n");
                                 break;
                             // Case 4: Delete request
                             case 'd':
                                 printf("del\n");
-                                serve_del();
+                                serve_del(r_buff);
                                 printf("put\n");
                                 break;
                             default:

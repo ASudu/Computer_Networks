@@ -179,7 +179,7 @@ int main()
     while(1)
     {
         printf("Enter one of the following options:\n");
-        printf(" p - put key_buff val_buff\n g - get key_buff\n d - del key_buff\n q - Quit\n");
+        printf(" p - put key-value pair\n g - get value for a key\n d - delete key-value pair\n q - Quit\n");
         printf("Your choice: ");
         scanf("%c", &ch);
         ch = tolower(ch);
