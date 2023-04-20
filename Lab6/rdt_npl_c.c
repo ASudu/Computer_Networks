@@ -4,6 +4,7 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <time.h>       // For rand
 
 #define BUFLEN 512
 #define PORT 8882
@@ -32,6 +33,10 @@ int main()
     char buf[BUFLEN], message[BUFLEN];
     char* server_ip = "127.0.1.1";
     DATA_PKT send_pkt,rcv_ack;
+
+    // For packet discard
+    srand(time(NULL));
+    int drop_flag = rand()%2;
     
     if ( (c_sock=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
         error("[-] Error creating client socket! Exiting...\n");
@@ -58,7 +63,7 @@ int main()
             case 1:     // Waiting for ACK 0
                 if (recvfrom(c_sock, &rcv_ack, sizeof(rcv_ack), 0, (struct sockaddr *) &client, &clen) == -1)
                     error("[-] Error in receiving ACK 0! Exiting...\n");
-                if (rcv_ack.sq_no==0)
+                if (!drop_flag && rcv_ack.sq_no==0)
                 {  
                     printf("[+] Received ack seq. no. %d\n",rcv_ack.sq_no);
                     state = 2;
@@ -75,7 +80,7 @@ int main()
             case 3:     //waiting for ACK 1
                 if(recvfrom(c_sock, &rcv_ack, sizeof(rcv_ack), 0, (struct sockaddr*) &client, &clen) == -1)
                     error("[-] Error in receiving ACK 1! Exiting...\n");
-                if (rcv_ack.sq_no==1)
+                if (!drop_flag && rcv_ack.sq_no==1)
                 {
                     printf("[+] Received ack seq. no. %d\n",rcv_ack.sq_no);
                     state = 0;

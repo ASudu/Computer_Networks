@@ -4,6 +4,7 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include <sys/socket.h>
+#include <time.h>       // For rand
 
 #define BUFLEN 512
 #define PORT 8882
@@ -32,6 +33,10 @@ int main()
     DATA_PKT rcv_pkt;
     ACK_PKT  ack_pkt;
 
+    // For packet discard
+    srand(time(NULL));
+    int drop_flag = rand()%2;
+
     // Create a UDP socket
     if ((s_sock=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
         error("[-] Error creating server socket! Exiting...\n");
@@ -59,7 +64,9 @@ int main()
                 // Try to receive some data, this is a blocking call
                 if ((recv_len = recvfrom(s_sock, &rcv_pkt, BUFLEN, 0, (struct sockaddr*) &client, &slen)) == -1)
                     error("[-] Error in receiving message with seq #0! Exiting...\n");
-                if (rcv_pkt.sq_no==0)
+                
+                // Do this when drop flag is not set and packet has expected seq no
+                if (!drop_flag && rcv_pkt.sq_no==0)
                 {
                     printf("[+] Packet received with seq. no. %d and Packet content is:\n %s",rcv_pkt.sq_no, rcv_pkt.data);
                     ack_pkt.sq_no = 0;
@@ -77,7 +84,9 @@ int main()
                 // Try to receive some data, this is a blocking call
                 if ((recv_len = recvfrom(s_sock, &rcv_pkt, BUFLEN, 0, (struct sockaddr*) &client, &slen)) == -1)
                     error("[-] Error in receiving message with seq #1! Exiting...\n");
-                if (rcv_pkt.sq_no==1)
+                
+                // Do this when drop flag is not set and packet has expected seq no
+                if (!drop_flag && rcv_pkt.sq_no==1)
                 {
                     printf("[+] Packet received with seq. no. %d and Packet content is: %s",rcv_pkt.sq_no, rcv_pkt.data);
                     ack_pkt.sq_no = 1;
