@@ -82,7 +82,7 @@ void serve_put(char* r_buff)
         // Read line by line to check if key exists
         while(fgets(line, strlen(line), f) != NULL)
         {
-            // char* reference_key = strtok(line, " ");
+            char* reference_key = strtok(line, " ");
 
             if(!strcmp(reference_key, key))
             {

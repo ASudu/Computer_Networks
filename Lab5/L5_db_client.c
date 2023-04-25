@@ -12,7 +12,7 @@
 int c_sock, key;
 struct sockaddr_in client;
 int clen = sizeof(client);
-char* server_ip = "172.18.76.160";
+char* server_ip = "127.0.1.1";
 char key_buff[2*BUFFLEN], val_buff[BUFFLEN], ch, dummy;
 
 void error(char* msg)
