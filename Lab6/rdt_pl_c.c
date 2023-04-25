@@ -35,10 +35,6 @@ int main()
     char* server_ip = "127.0.1.1";
     DATA_PKT send_pkt,rcv_ack;
 
-    // For dropping data packets
-    srand(time(NULL));
-    int r = rand()%100;       // 10% chance of packet drop
-    int drop = (r != 0)?1:0;
     
     if ( (c_sock=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
         error("[-] Error creating client socket! Exiting...\n");
@@ -51,6 +47,11 @@ int main()
     int state = 0;
     while(1)
     {
+        // For dropping data packets
+        srand(time(NULL));
+        int r = rand()%100;       // 1% chance of packet drop
+        int drop = (r != 0)?1:0;
+        
         switch(state)
         {
             case 0:     // wait for sending packet with seq. no. 0

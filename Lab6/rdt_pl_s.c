@@ -34,10 +34,6 @@ int main()
     DATA_PKT rcv_pkt;
     ACK_PKT  ack_pkt;
 
-    // For dropping ACKs
-    srand(time(NULL));
-    int r = rand()%100;       // 10% chance of packet drop
-    int drop = (r != 0)?1:0;
 
     // Create a UDP socket
     if ((s_sock=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
@@ -57,6 +53,11 @@ int main()
 
     while(1)
     {
+        // For dropping ACKs
+        srand(time(NULL));
+        int r = rand()%100;       // 1% chance of packet drop
+        int drop = (r != 0)?1:0;
+
         switch(state)
         {
             case 0:

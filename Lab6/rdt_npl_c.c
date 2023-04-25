@@ -32,7 +32,8 @@ int main()
     int c_sock, i, clen=sizeof(client);
     char buf[BUFLEN], message[BUFLEN];
     char* server_ip = "127.0.1.1";
-    DATA_PKT send_pkt,rcv_ack;
+    DATA_PKT send_pkt;
+    ACK_PKT rcv_ack;
     
     if ( (c_sock=socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)) == -1)
         error("[-] Error creating client socket! Exiting...\n");
