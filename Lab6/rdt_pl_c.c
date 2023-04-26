@@ -6,9 +6,11 @@
 #include <arpa/inet.h>
 #include <sys/socket.h>
 #include <time.h>       // For rand and timer
+#include <sys/select.h>
 
 #define BUFLEN 512
 #define PORT 8882
+#define TIMEOUT 5
 
 typedef struct packet1
 {
@@ -49,9 +51,9 @@ int main()
     {
         // For dropping data packets
         srand(time(NULL));
-        int r = rand()%100;       // 1% chance of packet drop
+        int r = rand()%2;       // 1% chance of packet drop
         int drop = (r != 0)?1:0;
-        
+
         switch(state)
         {
             case 0:     // wait for sending packet with seq. no. 0
@@ -64,6 +66,33 @@ int main()
                 break;
             
             case 1:     // Waiting for ACK 0
+                ;
+                // Initialize a set of file descriptors
+                fd_set rcvset;
+
+                struct timeval tv;
+
+                FD_ZERO(&rcvset);
+                FD_SET(c_sock,&rcvset);
+
+                tv.tv_sec = TIMEOUT;
+                tv.tv_usec = 0;
+
+                int n;
+
+                // Monitor the sockets 0 to (c_sock + 1) - 1
+                if(n = select(c_sock + 1, &rcvset, NULL, NULL, &tv) < 0)
+                    error("[-] Error in select call! Exiting...\n");
+                
+                // Timeout => retransmit
+                if(n == 0)
+                {
+                    if  (sendto(c_sock,  &send_pkt,  sizeof(send_pkt),  0,  (struct sockaddr *) &client, clen)==-1)
+                        error("[-] Error in sending message with seq #0! Exiting...\n");
+                    break;
+                }
+
+                // Socket readable
                 if (recvfrom(c_sock, &rcv_ack, sizeof(rcv_ack), 0, (struct sockaddr *) &client, &clen) == -1)
                     error("[-] Error in receiving ACK 0! Exiting...\n");
                 
@@ -83,6 +112,33 @@ int main()
                 state = 3;
                 break;
             case 3:     //waiting for ACK 1
+                ;
+                // Initialize a set of file descriptors
+                // fd_set rcvset;
+
+                // struct timeval tv;
+
+                FD_ZERO(&rcvset);
+                FD_SET(c_sock,&rcvset);
+
+                tv.tv_sec = TIMEOUT;
+                tv.tv_usec = 0;
+
+                // int n;
+
+                // Monitor the sockets 0 to (c_sock + 1) - 1
+                if(n = select(c_sock + 1, &rcvset, NULL, NULL, &tv) < 0)
+                    error("[-] Error in select call! Exiting...\n");
+                
+                // Timeout => retransmit
+                if(n == 0)
+                {
+                    if  (sendto(c_sock,  &send_pkt,  sizeof(send_pkt),  0,  (struct sockaddr *) &client, clen)==-1)
+                        error("[-] Error in sending message with seq #0! Exiting...\n");
+                    break;
+                }
+
+                // Socket readable
                 if(recvfrom(c_sock, &rcv_ack, sizeof(rcv_ack), 0, (struct sockaddr*) &client, &clen) == -1)
                     error("[-] Error in receiving ACK 1! Exiting...\n");
                 

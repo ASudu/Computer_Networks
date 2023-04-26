@@ -55,7 +55,7 @@ int main()
     {
         // For dropping ACKs
         srand(time(NULL));
-        int r = rand()%100;       // 1% chance of packet drop
+        int r = rand()%2;       // 1% chance of packet drop
         int drop = (r != 0)?1:0;
 
         switch(state)
